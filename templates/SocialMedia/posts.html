@@ -1,0 +1,81 @@
+{% load static %}
+
+<link rel="stylesheet" href="{% static 'assets/css/social-media.css' %}">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function () {
+        $('#post-caption-input').focus(function () {
+            $('#post-description-group').show();
+            $('#post-image-group').show();
+            $('#create-post-button').insertAfter($('#post-image-group'));
+        });
+    });
+</script>
+
+<main class="layout layout--3">
+    <div class="container">
+        <div class="roomList">
+
+            <div class="feed post-container">
+                <div class="post-content">
+                    <form action="{% url 'post:create-post-api' %}" method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <div class="input-box">
+                                <input type="text" class="form-control" id="post-caption-input" name="caption"
+                                       placeholder="Caption..." required>
+                            </div>
+                        </div>
+                        <div class="form-group" id="post-description-group" style="display: none;">
+                            <div class="input-box">
+                                <textarea class="form-control" id="post-description" name="description"
+                                          placeholder="Description..." rows="4" required></textarea>
+                            </div>
+                        </div>
+                        <div class="form-group" id="post-image-group" style="display: none;">
+                            <label for="post-image">Image:</label>
+                            <div class="input-box">
+                                <input type="file" class="form-control-file" id="post-image" name="image">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="create-post-button">Create Post</button>
+                    </form>
+                </div>
+            </div>
+
+            {% for post in posts %}
+                <div class="feed post-container">
+                    <div class="post-header">
+                        <a href="" class="author-link">
+                            <div class="author-avatar">
+                                <img src="{{ post.user.get_profile_picture_url }}"
+                                     alt="{{ post.user.username }}'s profile picture">
+                            </div>
+                            <div class="author-info">
+                                <span class="author-name">{{ post.user.first_name }} {{ post.user.last_name }}</span>
+                                <span class="author-username">@{{ post.user.username }}</span>
+                            </div>
+                        </a>
+                        <div class="">
+                            <span>{{ post.created_at | timesince }} ago</span>
+                        </div>
+                    </div>
+                    <div class="post-content">
+                        <p class="post-caption">{{ post.caption }}</p>
+                        <p class="post-description">{{ post.description }}</p>
+                        {% if post.image %}
+                            <img src="{{ post.image.url }}" alt="Post Image" class="post-image">
+                        {% endif %}
+                        <div class="post-options">
+                            <i class="fa fa-thumbs-up"></i>
+                            <i class="fa fa-comment"></i>
+                            <i class="fa fa-eye">{{ post.total_views }}</i>
+                            <i class="fa fa-share"></i>
+                        </div>
+
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</main>

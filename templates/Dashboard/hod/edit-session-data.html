@@ -1,0 +1,57 @@
+{% extends 'Dashboard/dashboard-base.html' %}
+
+{% block main-content %}
+    <div class="content container-fluid">
+
+        <div class="page-header">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h3 class="page-title">Add Session</h3>
+                    <ul class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="Sessions.html">Session</a></li>
+                        <li class="breadcrumb-item active">Add Session</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="card">
+                    <div class="card-body">
+                        <form action="{% url 'dashboard:edit-session-data' session.pk %}" method="post">
+                            {% csrf_token %}
+                            <div class="row">
+                                <div class="col-12">
+                                    <h5 class="form-title"><span>Session Information</span></h5>
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <div class="form-group">
+                                        <label>Start Date</label>
+                                        <input class="form-control" type="date" name="start-date"
+                                               value="{{ session.start_date }}">
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-sm-6">
+                                    <div class="form-group">
+                                        <label>End Date</label>
+                                        <input class="form-control" type="date" name="end-date"
+                                               value="{{ session.end_date }}">
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <button class="btn btn-primary" type="submit">Submit</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+{% endblock main-content %}

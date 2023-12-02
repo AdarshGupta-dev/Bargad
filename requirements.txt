@@ -1,0 +1,13 @@
+Django==4.2.7
+djangorestframework==3.14.0
+Pillow==10.1.0
+
+# Required to keep the secret key, database info and more secret.
+python-decouple==3.8
+
+# Required for postgres.
+psycopg2-binary==2.9.9
+
+# Required for shell
+ipdb==0.13.13
+ipython==8.18.1

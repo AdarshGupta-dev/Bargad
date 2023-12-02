@@ -1,0 +1,111 @@
+{% extends 'Dashboard/dashboard-base.html' %}
+
+{% block main-content %}
+
+    <div class="content container-fluid">
+
+        <div class="page-header">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h3 class="page-title">Update Profile</h3>
+                    <ul class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="subjects.html">Dashboard</a></li>
+                        <li class="breadcrumb-item active">Update Profile</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+
+        {% if messages %}
+            {% for message in messages %}
+                {% if message.tags == 'error' %}
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <strong> {{ message }}
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+
+
+        {% if messages %}
+            {% for message in messages %}
+                {% if message.tags == 'success' %}
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <strong> {{ message }}
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="card">
+                    <div class="card-body">
+                        <form action="{% url 'dashboard:profile-page' %}" method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <div class="col-12">
+                                <h5 class="form-title"><span>Update Profile</span></h5>
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <div class="form-group">
+                                    <label>First name</label>
+                                    <input type="text" class="form-control" name="first_name"
+                                           value="{{ user.first_name }}">
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <div class="form-group">
+                                    <label>Last Name</label>
+                                    <input type="text" class="form-control" name="last_name"
+                                           value="{{ user.last_name }}">
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-sm-6">
+                                <div class="form-group">
+                                    <label>Email</label>
+                                    <input type="text" class="form-control" name="email" readonly
+                                           value="{{ user.email }}">
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-sm-6">
+                                <div class="form-group">
+                                    <label>Username</label>
+                                    <input type="text" class="form-control" name="username" readonly
+                                           value="{{ user.username }}">
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <div class="form-group">
+                                    <label>Password</label>
+                                    <input type="password" class="form-control" name="password"
+                                           placeholder="Enter a new password if you wish to change">
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <div class="form-group">
+                                    <label>Profile Picture</label>
+                                    <input type="file" class="form-control" name="profile_picture">
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">Submit</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+{% endblock main-content %}

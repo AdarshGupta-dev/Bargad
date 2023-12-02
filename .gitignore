@@ -1,0 +1,22 @@
+# virtual enviornment
+venv/
+
+# pycharm files
+.idea/
+
+# currently using sqlite
+db.sqlite3
+
+# temp python files
+__pycache__/
+*.pyc
+
+# log files
+*.log
+
+# currently storing all pictures here
+media/
+
+# django screate key
+.env
+
