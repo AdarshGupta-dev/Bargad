@@ -11,3 +11,9 @@ psycopg2-binary==2.9.9
 # Required for shell
 ipdb==0.13.13
 ipython==8.18.1
+
+# Required for testing and creating fake data.
+# Faker is needed to create dummy names, address, and such.
+# Requests to fetch fake profile pictures.
+Faker==20.1.0
+requests==2.31.0
