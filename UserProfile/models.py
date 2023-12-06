@@ -32,11 +32,10 @@ class Session(models.Model):
 # Department is grouped by similar subjects.
 # department of engineering, department of science, department of commerce.
 class Department(models.Model):
-    short_name = models.CharField(_('short name'), max_length=120, blank=False, null=False)
-    full_name = models.CharField(_('full name'), max_length=120, blank=False, null=False)
+    name = models.CharField(_('short name'), max_length=120, blank=False, null=False)
 
     def __str__(self):
-        return self.short_name
+        return self.name
 
 
 # Program is a course like B.Tech, M.Tech, B.Sc., M.Sc, B.Com, M.Com.
@@ -54,16 +53,16 @@ class Program(models.Model):
 # Semester is a part of a program. Like B.Tech has 8 semesters. M.Tech has 4 semesters.
 class Semester(models.Model):
     class SemesterChoices(models.IntegerChoices):
-        SEMESTER_1 = 1, '1'
-        SEMESTER_2 = 2, '2'
-        SEMESTER_3 = 3, '3'
-        SEMESTER_4 = 4, '4'
-        SEMESTER_5 = 5, '5'
-        SEMESTER_6 = 6, '6'
-        SEMESTER_7 = 7, '7'
-        SEMESTER_8 = 8, '8'
-        SEMESTER_9 = 9, '9'
-        SEMESTER_10 = 10, '10'
+        SEMESTER_1 = 1
+        SEMESTER_2 = 2
+        SEMESTER_3 = 3
+        SEMESTER_4 = 4
+        SEMESTER_5 = 5
+        SEMESTER_6 = 6
+        SEMESTER_7 = 7
+        SEMESTER_8 = 8
+        SEMESTER_9 = 9
+        SEMESTER_10 = 10
 
     semester = models.PositiveSmallIntegerField(_('semester'), choices=SemesterChoices.choices, null=False)
     program = models.ForeignKey(Program, on_delete=models.CASCADE)
@@ -83,6 +82,42 @@ class Subject(models.Model):
 
     def __str__(self):
         return self.code
+
+
+class Section(models.Model):
+    class SectionChoices(models.TextChoices):
+        A = 'A'
+        B = 'B'
+        C = 'C'
+        D = 'D'
+        E = 'E'
+        F = 'F'
+        G = 'G'
+        H = 'H'
+        I = 'I'
+        J = 'J'
+        K = 'K'
+        L = 'L'
+        M = 'M'
+        N = 'N'
+        O = 'O'
+        P = 'P'
+        Q = 'Q'
+        R = 'R'
+        S = 'S'
+        T = 'T'
+        U = 'U'
+        V = 'V'
+        W = 'W'
+        X = 'X'
+        Y = 'Y'
+        Z = 'Z'
+
+    section = models.CharField(_('section'), max_length=1, choices=SectionChoices.choices, null=False)
+    program = models.ForeignKey(Program, on_delete=models.CASCADE)
+
+    # def __str__(self):
+    #     return self.program.session + ' ' + self.program.short_name + ' ' + self.section
 
 
 # Custom User Model. We will use this instead of django's default User model.
