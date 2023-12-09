@@ -38,15 +38,15 @@ def bargad_user_login_required(user_type=None):
     def decorator(a_view):
         @wraps(a_view)
         def _wrapped_view(request, *args, **kwargs):
-            if not request.user.is_authenticated:
+            if not request.student.is_authenticated:
                 return HttpResponseRedirect(reverse('login-page'))
 
             if user_type is None:
                 return a_view(request, *args, **kwargs)
 
-            if (user_type == 'Admin' and request.user.is_user_admin) or \
-                    (user_type == 'Staff' and request.user.is_user_staff) or \
-                    (user_type == 'Student' and request.user.is_user_student):
+            if (user_type == 'Admin' and request.student.is_user_admin) or \
+                    (user_type == 'Staff' and request.student.is_user_staff) or \
+                    (user_type == 'Student' and request.student.is_user_student):
                 return a_view(request, *args, **kwargs)
 
             raise Http404('page not found!')

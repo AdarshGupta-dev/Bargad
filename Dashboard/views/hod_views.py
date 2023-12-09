@@ -5,7 +5,7 @@ from django.utils.decorators import method_decorator
 from django.views import View
 
 from Bargad.utils import bargad_user_login_required
-from UserProfile.models import StudentUserProfile, StaffUserProfile, TeacherUserProfile, Program, Session, Department
+from UserProfile.models import StudentUserProfile, StaffUserProfile, TeacherUserProfile, Program, AcademicSession, Department
 
 
 class HodHomepage(View):

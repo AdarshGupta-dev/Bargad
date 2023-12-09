@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
+from django.core.validators import MinValueValidator, MaxValueValidator
 from Bargad.utils import get_profile_image_file_path
 
 
@@ -59,7 +60,7 @@ class BargadUser(AbstractUser):
         return f"{self.full_name}({self.username}) - {self.user_type}"
 
 
-# Session is year from to year to. Like 2018 -> 2022.
+# Academic Session is year from to year to. Like 2018 -> 2022.
 class AcademicSession(models.Model):
     start_year = models.PositiveSmallIntegerField(_('start year'), null=False)
     end_year = models.PositiveSmallIntegerField(_('end year'), null=False)
@@ -75,16 +76,16 @@ class AcademicSession(models.Model):
 
     def save(self, *args, **kwargs):
         # We will mostly take years as input and calculate dates from them.
-        # We still need date as session start month are not same for all universities.
+        # We still need date as Academic session start month are not same for all universities.
 
         if not self.start_year:
-            raise ValidationError("Start year is required")
+            raise ValidationError("Academic start year is required")
 
         if not self.end_year:
             self.end_year = self.start_year + 3
 
         if self.end_year < self.start_year:
-            raise ValidationError("End date must be after start date")
+            raise ValidationError("Academic end year can't be less than start year")
 
         self.start_date = timezone.datetime(self.start_year, 7, 1)
         self.end_date = timezone.datetime(self.end_year, 6, 30)
@@ -95,7 +96,7 @@ class AcademicSession(models.Model):
 # Department is grouped by similar subjects.
 # e.g. Department of Engineering, Department of Science, Department of Commerce.
 class Department(models.Model):
-    name = models.CharField(_('short name'), max_length=120, blank=False, null=False)
+    name = models.CharField(_('name'), max_length=120, blank=False, null=False, unique=True)
     head_of_department = models.ForeignKey(get_user_model(), related_name='departments', on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
@@ -108,14 +109,14 @@ class Program(models.Model):
     short_name = models.CharField(_('short name'), max_length=120, blank=False, null=False)
     full_name = models.CharField(_('full name'), max_length=120, blank=False, null=False)
 
-    session = models.ForeignKey(AcademicSession, related_name='programs', on_delete=models.CASCADE)
+    academic_session = models.ForeignKey(AcademicSession, related_name='programs', on_delete=models.CASCADE)
     department = models.ForeignKey(Department, related_name='programs', on_delete=models.CASCADE)
 
     def __str__(self):
         return self.short_name
 
     class Meta:
-        unique_together = ('program_id', 'session', 'department')
+        unique_together = ('program_id', 'academic_session', 'department')
 
 
 # Semester is a part of a program. Like B.Tech has 8 semesters. M.Tech has 4 semesters.
@@ -132,15 +133,19 @@ class Semester(models.Model):
         SEMESTER_9 = 9
         SEMESTER_10 = 10
 
-    semester = models.PositiveSmallIntegerField(_('semester'), choices=SemesterChoices.choices, null=False)
     program = models.ForeignKey(Program, on_delete=models.CASCADE)
+    semester = models.PositiveSmallIntegerField(_('semester'), choices=SemesterChoices.choices, null=False)
+    is_over = models.BooleanField(_('is over'), null=False, default=False)
 
     def __str__(self):
         return self.program.short_name + ' ' + str(self.semester)
 
+    class Meta:
+        unique_together = ('semester', 'program')
+
 
 class Subject(models.Model):
-    code = models.CharField(_('subject code'), primary_key=True, max_length=20)
+    subject_code = models.CharField(_('subject code'), max_length=20)
 
     short_name = models.CharField(_('short name'), max_length=120, blank=False, null=False)
     full_name = models.CharField(_('full name'), max_length=120, blank=False, null=False)
@@ -149,7 +154,10 @@ class Subject(models.Model):
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.code
+        return self.subject_code
+
+    class Meta:
+        unique_together = ('subject_code', 'program')
 
 
 class Section(models.Model):
@@ -181,14 +189,110 @@ class Section(models.Model):
         Y = 'Y'
         Z = 'Z'
 
-    section = models.CharField(_('section'), max_length=1, choices=SectionChoices.choices, null=False)
     program = models.ForeignKey(Program, on_delete=models.CASCADE)
+    semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
+    section = models.CharField(_('section'), max_length=1, choices=SectionChoices.choices, null=False, default=SectionChoices.A)
 
-    # def __str__(self):
-    #     return self.program.session + ' ' + self.program.short_name + ' ' + self.section
+    def __str__(self):
+        return f"{self.program.short_name} {self.semester.semester} {self.section}"
+
+    class Meta:
+        unique_together = ('program', 'semester', 'section')
 
 
-class UserProfile(models.Model):
+class Session(models.Model):
+    """
+    Session is period/class held on a particular date.
+    """
+    class SessionChoices(models.IntegerChoices):
+        SESSION_1 = 1
+        SESSION_2 = 2
+        SESSION_3 = 3
+        SESSION_4 = 4
+        SESSION_5 = 5
+        SESSION_6 = 6
+        SESSION_7 = 7
+        SESSION_8 = 8
+        SESSION_9 = 9
+        SESSION_10 = 10
+
+    program = models.ForeignKey(Program, on_delete=models.CASCADE)
+    semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
+    section = models.ForeignKey(Section, on_delete=models.CASCADE)
+
+    date = models.DateField(_('date'), null=False, db_index=True)
+    session = models.PositiveSmallIntegerField(_('session'), choices=SessionChoices.choices, null=False)
+
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
+    teacher = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.date.isoformat()} - {self.session}"
+
+    class Meta:
+        unique_together = ('program', 'semester', 'section', 'date', 'session')
+
+
+class Attendance(models.Model):
+    """
+    Attendance is a record of a student/teacher/staff presence on a particular day.
+    Leave applied by student/teacher/staff will be recorded here.
+    """
+    class AttendanceChoices(models.IntegerChoices):
+        PRESENT = 1
+        ABSENT = 2
+        LATE = 3
+        LEAVE = 4
+
+    user = models.ForeignKey(get_user_model(), related_name="attendance", on_delete=models.CASCADE)
+    date = models.DateField(_('date'), null=False, db_index=True)
+    status = models.PositiveSmallIntegerField(_('status'), choices=AttendanceChoices.choices, null=False)
+
+    def __str__(self):
+        return f"{self.user.full_name} - {self.date.isoformat()} {self.status}"
+
+    class Meta:
+        unique_together = ('date', 'user')
+
+
+class StudentAttendance(models.Model):
+    """
+    StudentAttendance is a record of a student presence on a particular day throughout the periods.
+    """
+
+    class AttendanceChoices(models.IntegerChoices):
+        PRESENT = 1
+        ABSENT = 2
+
+    session = models.ForeignKey(Session, on_delete=models.CASCADE)
+    student = models.ForeignKey(get_user_model(), related_name="session_attendance", on_delete=models.CASCADE)
+    status = models.PositiveSmallIntegerField(_('status'), choices=AttendanceChoices.choices, null=False)
+
+    def __str__(self):
+        return f"{self.student.full_name} - {self.session} {self.status}"
+
+    class Meta:
+        unique_together = ('session', 'student')
+
+
+class Grade(models.Model):
+    student = models.ForeignKey(get_user_model(), related_name="grade", on_delete=models.CASCADE, db_index=True)
+    teacher = models.ForeignKey(get_user_model(), related_name="graded", on_delete=models.CASCADE)
+
+    semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
+
+    marks = models.PositiveSmallIntegerField(_('marks'), null=False, validators=[MaxValueValidator(100), MinValueValidator(0)])
+    remarks = models.CharField(_('remarks'), max_length=256, blank=True, null=False)
+
+    def __str__(self):
+        return f"{self.student.full_name} - {self.semester} {self.subject} {self.marks}"
+
+    class Meta:
+        unique_together = ('student', 'semester', 'subject')
+
+
+class UserProfileBase(models.Model):
     """
     I wish to keep our auth model, BargadUser, to base minimum.
     Everything that is not mandatory will be here in BaseUserProfile.
@@ -205,23 +309,15 @@ class UserProfile(models.Model):
     dob = models.DateField(_('Date of Birth'), blank=True, null=False)
     gender = models.PositiveSmallIntegerField(_('gender'), blank=True, null=False, choices=GenderChoices.choices)
 
-    c_address = models.TextField(_('correspondence address'), max_length=1024, blank=True, null=False)
-    p_address = models.TextField(_('permanent address'), max_length=1024, blank=True, null=False)
-
-    p_contact = models.CharField(_('primary contact'), max_length=15, blank=True, null=False)
-    s_contact = models.CharField(_('secondary contact'), max_length=15, blank=True, null=False)
-
     bio = models.CharField(_('bio'), max_length=256, blank=True, null=False)
 
+    correspondence_address = models.TextField(_('correspondence address'), max_length=1024, blank=True, null=False)
+    permanent_address = models.TextField(_('permanent address'), max_length=1024, blank=True, null=False)
 
-class StudentUserProfile(UserProfile):
-    student_id = models.AutoField(_('student id'), primary_key=True)
+    primary_contact = models.CharField(_('primary contact'), max_length=15, blank=True, null=False)
+    secondary_contact = models.CharField(_('secondary contact'), max_length=15, blank=True, null=False)
 
-    program = models.ForeignKey(Program, related_name='students', on_delete=models.CASCADE)
-    subject = models.ManyToManyField(Subject, related_name='students')
-
-    is_alumni = models.BooleanField(_('is alumni'), null=False, default=False)
-
+    # parent/guardian details
     father_name = models.CharField(_('father name'), max_length=120, blank=True, null=False)
     father_qualification = models.CharField(_('father qualification'), max_length=120, blank=True, null=False)
     father_contact = models.CharField(_('father contact'), max_length=15, blank=True, null=False)
@@ -233,11 +329,30 @@ class StudentUserProfile(UserProfile):
     guardian_name = models.CharField(_('guardian name'), max_length=120, blank=True, null=False)
     guardian_contact = models.CharField(_('guardian contact'), max_length=15, blank=True, null=False)
 
+
+class StudentUserProfile(UserProfileBase):
+    student_id = models.AutoField(_('student id'), primary_key=True)
+
+    program = models.ForeignKey(Program, related_name='students', on_delete=models.CASCADE)
+    subject = models.ManyToManyField(Subject, related_name='students')
+    current_section = models.ForeignKey(Section, related_name='students', on_delete=models.CASCADE)
+
+    is_alumni = models.BooleanField(_('is alumni'), null=False, default=False)
+
     def __str__(self):
         return 'ST-' + str(self.student_id)
 
 
-class TeacherUserProfile(UserProfile):
+class StudentSectionHistory(models.Model):
+    student = models.ForeignKey(StudentUserProfile, related_name='section_history', on_delete=models.CASCADE)
+    semester = models.ForeignKey(Semester, related_name='section_history', on_delete=models.CASCADE)
+    section = models.ForeignKey(Section, related_name='section_history', on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('student', 'semester')
+
+
+class TeacherUserProfile(UserProfileBase):
     teacher_id = models.AutoField(_('teacher id'), primary_key=True)
 
     qualification = models.CharField(_('qualification'), max_length=120, blank=True, null=False)
@@ -250,7 +365,7 @@ class TeacherUserProfile(UserProfile):
         return 'TE-' + str(self.teacher_id)
 
 
-class StaffUserProfile(UserProfile):
+class StaffUserProfile(UserProfileBase):
     staff_id = models.AutoField(_('staff id'), primary_key=True)
     post = models.CharField(_('post'), max_length=120, blank=True, null=False)
 
