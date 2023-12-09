@@ -227,7 +227,7 @@ class Session(models.Model):
     teacher = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"{self.date.isoformat()} - {self.session}"
+        return f"{self.date} - {self.session}"
 
     class Meta:
         unique_together = ('program', 'semester', 'section', 'date', 'session')
@@ -249,7 +249,7 @@ class Attendance(models.Model):
     status = models.PositiveSmallIntegerField(_('status'), choices=AttendanceChoices.choices, null=False)
 
     def __str__(self):
-        return f"{self.user.full_name} - {self.date.isoformat()} {self.status}"
+        return f"{self.user.full_name} - {self.date} {self.status}"
 
     class Meta:
         unique_together = ('date', 'user')
