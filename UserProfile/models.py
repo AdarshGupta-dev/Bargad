@@ -9,8 +9,61 @@ from django.utils.translation import gettext_lazy as _
 from Bargad.utils import get_profile_image_file_path
 
 
+# Custom User Model. We will use this instead of django's default User model.
+class BargadUser(AbstractUser):
+    default_profile_picture = '/static/assets/img/default_profile_picture.png'
+
+    class UserTypeChoices(models.TextChoices):
+        ADMIN = 'Admin',
+        DEAN = 'Dean',
+        HOD = 'Head of Department',
+        STAFF = 'Staff',
+        TEACHER = 'Teacher',
+        STUDENT = 'Student',
+        ALUMNI = 'Alumni',
+
+    UT_ADMIN_LIST = [UserTypeChoices.ADMIN, UserTypeChoices.DEAN, UserTypeChoices.HOD]
+    UT_STAFF_LIST = [UserTypeChoices.TEACHER, UserTypeChoices.STAFF]
+
+    user_type = models.CharField(_('user type'), default=UserTypeChoices.STUDENT, choices=UserTypeChoices.choices, max_length=32)
+    profile_picture = models.ImageField(_('profile picture'), blank=True, upload_to=get_profile_image_file_path)
+
+    @cached_property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
+
+    @cached_property
+    def is_user_admin(self):
+        return self.user_type in self.UT_ADMIN_LIST
+
+    @cached_property
+    def is_user_staff(self):
+        return self.user_type in self.UT_STAFF_LIST
+
+    @cached_property
+    def is_user_student(self):
+        return self.user_type == self.UserTypeChoices.STUDENT
+
+    @cached_property
+    def is_user_alumni(self):
+        return self.user_type == self.UserTypeChoices.ALUMNI
+
+    @cached_property
+    def get_profile_picture_url(self):
+        if self.profile_picture:
+            return self.profile_picture.url
+
+        return self.default_profile_picture
+
+    def __str__(self):
+        return f"{self.full_name}({self.username}) - {self.user_type}"
+
+
 # Session is year from to year to. Like 2018 -> 2022.
-class Session(models.Model):
+class AcademicSession(models.Model):
+    start_year = models.PositiveSmallIntegerField(_('start year'), null=False)
+    end_year = models.PositiveSmallIntegerField(_('end year'), null=False)
+
     start_date = models.DateField(_('start date'), null=False)
     end_date = models.DateField(_('end date'), null=False)
 
@@ -20,19 +73,30 @@ class Session(models.Model):
     def is_active(self):
         return self.start_date <= timezone.now().date() <= self.end_date
 
-    def clean(self):
-        if self.end_date <= self.start_date:
+    def save(self, *args, **kwargs):
+        # We will mostly take years as input and calculate dates from them.
+        # We still need date as session start month are not same for all universities.
+
+        if not self.start_year:
+            raise ValidationError("Start year is required")
+
+        if not self.end_year:
+            self.end_year = self.start_year + 3
+
+        if self.end_year < self.start_year:
             raise ValidationError("End date must be after start date")
 
-    def save(self, *args, **kwargs):
-        self.clean()
-        super(Session, self).save(*args, **kwargs)
+        self.start_date = timezone.datetime(self.start_year, 7, 1)
+        self.end_date = timezone.datetime(self.end_year, 6, 30)
+
+        super().save(*args, **kwargs)
 
 
 # Department is grouped by similar subjects.
-# department of engineering, department of science, department of commerce.
+# e.g. Department of Engineering, Department of Science, Department of Commerce.
 class Department(models.Model):
     name = models.CharField(_('short name'), max_length=120, blank=False, null=False)
+    head_of_department = models.ForeignKey(get_user_model(), related_name='departments', on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -40,14 +104,18 @@ class Department(models.Model):
 
 # Program is a course like B.Tech, M.Tech, B.Sc., M.Sc, B.Com, M.Com.
 class Program(models.Model):
+    program_id = models.CharField(_('program id'), max_length=10, blank=False, name=False)
     short_name = models.CharField(_('short name'), max_length=120, blank=False, null=False)
     full_name = models.CharField(_('full name'), max_length=120, blank=False, null=False)
 
-    session = models.ForeignKey(Session, related_name='programs', on_delete=models.CASCADE)
+    session = models.ForeignKey(AcademicSession, related_name='programs', on_delete=models.CASCADE)
     department = models.ForeignKey(Department, related_name='programs', on_delete=models.CASCADE)
 
     def __str__(self):
         return self.short_name
+
+    class Meta:
+        unique_together = ('program_id', 'session', 'department')
 
 
 # Semester is a part of a program. Like B.Tech has 8 semesters. M.Tech has 4 semesters.
@@ -118,48 +186,6 @@ class Section(models.Model):
 
     # def __str__(self):
     #     return self.program.session + ' ' + self.program.short_name + ' ' + self.section
-
-
-# Custom User Model. We will use this instead of django's default User model.
-class BargadUser(AbstractUser):
-    default_profile_picture = '/static/assets/img/default_profile_picture.png'
-
-    class UserTypeChoices(models.TextChoices):
-        ADMIN = 'Admin',
-        DEAN = 'Dean',
-        HOD = 'Head of Department',
-        STAFF = 'Staff',
-        TEACHER = 'Teacher',
-        STUDENT = 'Student',
-        ALUMNI = 'Alumni',
-
-    UT_ADMIN_LIST = [UserTypeChoices.ADMIN, UserTypeChoices.DEAN, UserTypeChoices.HOD]
-    UT_STAFF_LIST = [UserTypeChoices.TEACHER, UserTypeChoices.STAFF]
-
-    user_type = models.CharField(_('user type'), default=UserTypeChoices.STUDENT, choices=UserTypeChoices.choices, max_length=32)
-    profile_picture = models.ImageField(_('profile picture'), blank=True, upload_to=get_profile_image_file_path)
-
-    @cached_property
-    def is_user_admin(self):
-        return self.user_type in self.UT_ADMIN_LIST
-
-    @cached_property
-    def is_user_staff(self):
-        return self.user_type in self.UT_STAFF_LIST
-
-    @cached_property
-    def is_user_student(self):
-        return self.user_type == self.UserTypeChoices.STUDENT
-
-    @cached_property
-    def is_user_alumni(self):
-        return self.user_type == self.UserTypeChoices.ALUMNI
-
-    def get_profile_picture_url(self):
-        if self.profile_picture:
-            return self.profile_picture.url
-
-        return self.default_profile_picture
 
 
 class UserProfile(models.Model):
