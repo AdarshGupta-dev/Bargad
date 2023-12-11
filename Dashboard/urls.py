@@ -1,7 +1,6 @@
 from django.urls import path
 
 from .views import staff_views, student_views, hod_views, views
-
 urlpatterns = [
     # common views
     path(r'', views.Homepage.as_view(), name='homepage'),
@@ -9,6 +8,19 @@ urlpatterns = [
 
     # Hod views
     path(r'hod/', hod_views.HodHomepage.as_view(), name='hod-homepage'),
+
+    # academic session CRUD
+    path(r'academic-sessions/', hod_views.AcademicSessions.as_view(), name='academic-sessions'),
+    path(r'academic-sessions/add/', hod_views.AddAcademicSession.as_view(), name='add-academic-session'),
+    path(r'academic-sessions/edit/<academic_session_id>', hod_views.EditAcademicSession.as_view(), name='edit-academic-session'),
+    path(r'academic-sessions/delete/<academic_session_id>', hod_views.DeleteAcademicSession.as_view(), name='delete-academic-session'),
+
+
+    path(r'hod/list-session/', hod_views.ListSession.as_view(), name='list-session'),
+    path(r'hod/add-session/', hod_views.AddSession.as_view(), name='add-session'),
+    path(r'hod/edit-session-data/<session_id>', hod_views.EditSessionData.as_view(), name='edit-session-data'),
+    path(r'hod/delete-session/<session_id>', hod_views.DeleteSession.as_view(), name='delete-session'),
+
     path(r'hod/list-student/', hod_views.ListStudents.as_view(), name='list-student'),
     path(r'hod/add-student/', hod_views.AddStudent.as_view(), name='add-student'),
     path(r'hod/edit-student-data/<student_id>', hod_views.EditStudentData.as_view(), name='edit-student-data'),
@@ -24,10 +36,7 @@ urlpatterns = [
     path(r'hod/edit-staff-data/<staff_id>', hod_views.EditStaffData.as_view(), name='edit-staff-data'),
     path(r'hod/delete-staff/<staff_id>', hod_views.DeleteStaff.as_view(), name='delete-staff'),
 
-    path(r'hod/list-session/', hod_views.ListSession.as_view(), name='list-session'),
-    path(r'hod/add-session/', hod_views.AddSession.as_view(), name='add-session'),
-    path(r'hod/edit-session-data/<session_id>', hod_views.EditSessionData.as_view(), name='edit-session-data'),
-    path(r'hod/delete-session/<session_id>', hod_views.DeleteSession.as_view(), name='delete-session'),
+
 
     path(r'hod/list-department/', hod_views.ListDepartment.as_view(), name='list-department'),
     path(r'hod/add-department/', hod_views.AddDepartment.as_view(), name='add-department'),
@@ -45,3 +54,4 @@ urlpatterns = [
     # Student views
     path(r'student/', student_views.StudentHomepage.as_view(), name='student-homepage'),
 ]
+

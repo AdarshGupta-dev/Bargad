@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     'Post',
     'SocialMedia',
     'UserProfile',
+    'Academic',
 ]
 
 MIDDLEWARE = [

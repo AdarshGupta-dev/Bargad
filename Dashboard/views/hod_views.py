@@ -4,14 +4,75 @@ from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views import View
 
+from Academic.models import Program, AcademicSession, Department
 from Bargad.utils import bargad_user_login_required
-from UserProfile.models import StudentUserProfile, StaffUserProfile, TeacherUserProfile, Program, AcademicSession, Department
+from UserProfile.models import StudentUserProfile, StaffUserProfile, TeacherUserProfile
 
 
 class HodHomepage(View):
     @method_decorator(bargad_user_login_required(user_type='Admin'))
     def get(self, *args, **kwargs):
         return render(self.request, 'Dashboard/hod/hod-dashboard-home.html')
+
+
+class AcademicSessions(View):
+    @method_decorator(bargad_user_login_required(user_type='Admin'))
+    def get(self, *args, **kwargs):
+        academic_sessions = AcademicSession.objects.all()
+        context_dict = {
+            'academic_sessions': academic_sessions,
+        }
+        return render(self.request, 'Dashboard/hod/academic-sessions.html', context_dict)
+
+
+class AddAcademicSession(View):
+    @method_decorator(bargad_user_login_required(user_type='Admin'))
+    def get(self, *args, **kwargs):
+        return render(self.request, 'Dashboard/hod/add-academic-session.html')
+
+    @method_decorator(bargad_user_login_required(user_type='Admin'))
+    def post(self, *args, **kwargs):
+        start_date = self.request.POST.get('start-date')
+        end_date = self.request.POST.get('end-date')
+        AcademicSession.objects.create(start_date=start_date, end_date=end_date)
+        return redirect(reverse('dashboard:list-academic-session'))
+
+
+class EditAcademicSession(View):
+    @method_decorator(bargad_user_login_required(user_type='Admin'))
+    def get(self, *args, **kwargs):
+        academic_session_id = kwargs.get('academic_session_id')
+        academic_session = AcademicSession.objects.get(pk=academic_session_id)
+        academic_session.start_date = academic_session.start_date.strftime('%Y-%m-%d')
+        academic_session.end_date = academic_session.end_date.strftime('%Y-%m-%d')
+
+        context_dict = {
+            'academic_session': academic_session,
+        }
+
+        return render(self.request, 'Dashboard/hod/edit-academic-session-data.html', context_dict)
+
+    @method_decorator(bargad_user_login_required(user_type='Admin'))
+    def post(self, *args, **kwargs):
+        academic_session_id = kwargs.get('academic_session_id')
+        start_date = self.request.POST.get('start-date')
+        end_date = self.request.POST.get('end-date')
+
+        academic_session = AcademicSession.objects.get(pk=academic_session_id)
+        academic_session.start_date = start_date
+        academic_session.end_date = end_date
+
+        academic_session.save()
+        return redirect(reverse('dashboard:list-academic-session'))
+
+
+class DeleteAcademicSession(View):
+    @method_decorator(bargad_user_login_required(user_type='Admin'))
+    def get(self, *args, **kwargs):
+        academic_session_id = kwargs.get('academic_session_id')
+        academic_session = get_object_or_404(AcademicSession.objects, pk=academic_session_id)
+        academic_session.delete()
+        return redirect(reverse('dashboard:list-academic-session'))
 
 
 class AddStudent(View):
@@ -191,7 +252,7 @@ class ListSession(View):
         context_dict = {
             'sessions': sessions,
         }
-        return render(self.request, 'Dashboard/hod/list-session.html', context_dict)
+        return render(self.request, 'Dashboard/hod/academic-sessions.html', context_dict)
 
 
 class AddSession(View):
